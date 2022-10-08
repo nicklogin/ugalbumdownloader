@@ -1,0 +1,9 @@
+*.png
+__pycache__
+geckodriver.exe
+geckodriver.log
+.ipynb_checkpoints
+.vscode
+env
+test_downloads
+tests/auth.py
