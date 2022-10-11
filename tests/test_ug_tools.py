@@ -2,7 +2,7 @@ import unittest
 import os
 
 from ug_album_bot.ug_tools import UGDownloader
-from tests.auth import USERNAME, PASSWORD
+from tests.params import USERNAME, PASSWORD, DOWNLOAD_DIR, TIMEOUT
 
 
 # class TestUGTracklistExtractor(unittest.TestCase):
@@ -36,16 +36,19 @@ from tests.auth import USERNAME, PASSWORD
 
 class TestUGDownloader(unittest.TestCase):
     def setUp(self) -> None:
-        download_dir = "test_downloads"
-        if not os.path.exists(download_dir):
-            os.mkdir(download_dir)
-        self.download_dir = os.path.abspath(download_dir)
+        if not os.path.exists(DOWNLOAD_DIR):
+            os.mkdir(DOWNLOAD_DIR)
+        self.download_dir = os.path.abspath(DOWNLOAD_DIR)
 
         self.tab_downloader = UGDownloader(
             USERNAME,
             PASSWORD,
-            self.download_dir
+            self.download_dir,
+            timeout=TIMEOUT
         )
+
+    def tearDown(self) -> None:
+        self.tab_downloader.close_driver()
 
     def test_login(self) -> None:
         self.tab_downloader.login()
@@ -53,7 +56,6 @@ class TestUGDownloader(unittest.TestCase):
             "Incorrect password",
             self.tab_downloader.driver.page_source
         )
-        self.tab_downloader.driver.close()
 
     def test_download_tab_by_url(self) -> None:
         url = "https://tabs.ultimate-guitar.com/tab/linkin-park/faint-guitar-pro-224026"
@@ -66,7 +68,7 @@ class TestUGDownloader(unittest.TestCase):
         self.assertTrue(
             os.path.exists(filepath)
         )
-        os.remove(filepath)
+        # os.remove(filepath)
 
     def test_get_best_tab_link(self) -> None:
         artist = "Linkin Park"
@@ -79,3 +81,4 @@ class TestUGDownloader(unittest.TestCase):
         print(tab_link)
 
         self.assertTrue(tab_link == url)
+

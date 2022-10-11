@@ -1,9 +1,13 @@
 import os
 
+import ug_album_bot.div_classes as div_classes
+
 from typing import Literal, Tuple
 from time import sleep
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.common.exceptions import NoSuchElementException
 
 
 class UGDownloader:
@@ -49,12 +53,23 @@ class UGDownloader:
     def close_driver(self) -> None:
         self.driver.close()
 
+    def screenshot(self, filename: str) -> None:
+        if self.driver.save_screenshot(
+            os.path.join(
+                os.getcwd(),
+                filename
+            )
+        ):
+            return
+        else:
+            raise Exception("Unable to screenshot")
+
     def login(self) -> None:
         # click login button
         self.driver.get("https://www.ultimate-guitar.com/")
         login_btn = self.driver.find_element(
             by="xpath",
-            value='//button[@class="rPQkl yDkT4 IxFbd exTWY lTEpj qOnLe QlmHX"]'
+            value=f'//button[@class="{div_classes.LOGIN_BUTTON_CLASS}"]'
         )
         login_btn.click()
 
@@ -64,7 +79,7 @@ class UGDownloader:
         # send login data
         form = self.driver.find_element(
             by="xpath",
-            value='//form[@class=""]'
+            value=f'//form[@class="{div_classes.LOGIN_FORM_CLASS}"]'
         )
         form.find_element(by="name", value="username").send_keys(self.username)
         form.find_element(by="name", value="password").send_keys(self.password)
@@ -72,18 +87,29 @@ class UGDownloader:
 
         sleep(self.timeout)
 
+        filename = str(datetime.now()).replace(
+            ' ', '_'
+        ).replace(
+            ':', '_'
+        ).replace(
+            '.', '_'
+        )
+        # self.screenshot(f"login_{filename}.png")
+
     def download_tab_by_url(self, url: str) -> None:
         self.login()
 
         self.driver.get(url)
+        sleep(self.timeout)
+        # self.screenshot("download_page.png")
+
         form = self.driver.find_element(
             by="xpath",
             value='//form[@action="https://tabs.ultimate-guitar.com/tab/download"]'
         )
+        # form.screenshot("download_form.png")
         form.submit()
         sleep(self.timeout)
-
-        self.close_driver()
 
     def get_best_tab_link(
         self,
@@ -98,37 +124,51 @@ class UGDownloader:
 
         tab_divs = self.driver.find_elements(
             by="xpath",
-            value='//div[@class="LQUZJ"]'
+            value=f'//div[@class="{div_classes.TAB_DIV_CLASS}"]'
         )
         best_tab_link = (None, 0, 0)
-        print(len(tab_divs))
+        # print(len(tab_divs))
 
         for idx, tab_div in enumerate(tab_divs):
-            print(tab_div.tag_name)
-            tab_div.screenshot(f"tab_div_{idx}.png")
+            # print(tab_div.tag_name)
+            # tab_div.screenshot(f"tab_div_{idx}.png")
             tab_type_div = tab_div.find_element(
                 by="xpath",
-                value='.//div[@class="lIKMM PdXKy"]'
+                value=f'.//div[@class="{div_classes.TAB_TYPE_CLASS}"]'
             )
-            print(tab_type_div.text)
-            tab_type_div.screenshot(f"tab_type_div_{idx}.png")
+            # print(tab_type_div.text)
+            # tab_type_div.screenshot(f"tab_type_div_{idx}.png")
             if tab_type_div.text.lower().strip() == "guitar pro":
+                # count coloured stars
                 tab_rating = len(
                     tab_div.find_elements(
                         by='xpath',
-                        value='.//div[@class="kd3Q7"]'
+                        value=f'.//span[@class="{div_classes.STAR_CLASS}"]'
                     )
                 )
-                tab_votes = int(
-                    tab_div.find_element(
+                # count half-coloured stars
+                tab_rating += len(
+                    tab_div.find_elements(
                         by='xpath',
-                        value='.//div[@class="djFV9"]'
-                    ).text
+                        value=f'.//span[@class="{div_classes.HALF_STAR_CLASS}"]'
+                    )
                 )
+
+                try:
+                    tab_votes = int(
+                        tab_div.find_element(
+                            by='xpath',
+                            value=f'.//div[@class="{div_classes.TAB_VOTES_CLASS}"]'
+                        ).text
+                    )
+                except NoSuchElementException:
+                    # if there are no votes on selected tab
+                    tab_votes = 0
+
                 tab_link = tab_div.find_element(
                     by='xpath',
-                    value='a[@class="aPPf7 HT3w5 lBssT"]'
-                ).href
+                    value=f'.//a[@class="{div_classes.TAB_LINK_CLASS}"]'
+                ).get_attribute("href")
 
                 if (
                     self.order == "rating" and tab_rating > best_tab_link[1]

@@ -1,7 +1,7 @@
 import unittest
 
 from ug_album_bot.discogs_tools import DiscogsTracklistExtractor
-from tests.auth import USER_TOKEN
+from tests.params import USER_TOKEN
 
 
 class TestDiscogsTracklistExtractor(unittest.TestCase):
