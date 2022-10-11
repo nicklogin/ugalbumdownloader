@@ -68,7 +68,7 @@ class TestUGDownloader(unittest.TestCase):
         self.assertTrue(
             os.path.exists(filepath)
         )
-        # os.remove(filepath)
+        os.remove(filepath)
 
     def test_get_best_tab_link(self) -> None:
         artist = "Linkin Park"
