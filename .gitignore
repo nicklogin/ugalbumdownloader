@@ -7,3 +7,4 @@ geckodriver.log
 env
 test_downloads
 tests/auth.py
+tests/params.py
