@@ -61,6 +61,7 @@ class TestUGDownloader(unittest.TestCase):
     def test_download_tab_by_url(self) -> None:
         url = "https://tabs.ultimate-guitar.com/tab/linkin-park/faint-guitar-pro-224026"
         filename = "Linkin Park - Faint (ver 2).gp3"
+        self.tab_downloader.login()
         self.tab_downloader.download_tab_by_url(url)
         filepath = os.path.join(
             self.download_dir,

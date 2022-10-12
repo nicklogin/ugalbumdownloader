@@ -34,16 +34,17 @@ class AlbumDownloadManager:
         tracklist: List[str]
     ) -> None:
         # TODO: optimize with multiprocessing
+        downloader = UGDownloader(
+            username=self.ug_username,
+            password=self.ug_password,
+            directory=self.album_download_dir,
+            geckopath=self.geckopath,
+            timeout=self.timeout,
+            order=self.order
+        )
+        downloader.login()
         for track_id, track in enumerate(tracklist):
             print(track)
-            downloader = UGDownloader(
-                username=self.ug_username,
-                password=self.ug_password,
-                directory=self.album_download_dir,
-                geckopath=self.geckopath,
-                timeout=self.timeout,
-                order=self.order
-            )
             try:
                 tab_link,\
                 tab_rating,\
@@ -63,11 +64,12 @@ class AlbumDownloadManager:
                 )
             except NoTabsFoundException:
                 pass
-            downloader.close_driver()
-            del downloader
 
             # find track in folder and rename it to include ID
             pass
+
+        downloader.close_driver()
+        del downloader
 
     def save_album_info(self) -> None:
         with open(os.path.join(
@@ -121,4 +123,4 @@ if __name__ == '__main__':
         timeout=params.TIMEOUT,
         order=params.ORDER
     )
-    m.download_album_tabs("Metallica", "And Justice For All")
+    m.download_album_tabs("Linkin Park", "Meteora")

@@ -98,7 +98,7 @@ class UGDownloader:
             )
 
     def download_tab_by_url(self, url: str) -> None:
-        self.login()
+        # self.login()
 
         self.driver.get(url)
         sleep(self.timeout)
@@ -148,15 +148,15 @@ class UGDownloader:
                     # count coloured stars
                     tab_rating = len(
                         tab_div.find_elements(
-                            by='xpath',
-                            value=f'.//span[@class="{div_classes.STAR_CLASS}"]'
+                            by='class_name',
+                            value=div_classes.STAR_CLASS
                         )
                     )
                     # count half-coloured stars
                     tab_rating += len(
                         tab_div.find_elements(
-                            by='xpath',
-                            value=f'.//span[@class="{div_classes.HALF_STAR_CLASS}"]'
+                            by='class_name',
+                            value=div_classes.HALF_STAR_CLASS
                         )
                     )
 
