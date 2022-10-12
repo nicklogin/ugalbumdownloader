@@ -1,6 +1,8 @@
 import os
 
 import ug_album_bot.div_classes as div_classes
+from ug_album_bot.exceptions import CannotSreenshotException
+from ug_album_bot.exceptions import NoTabsFoundException
 
 from typing import Literal, Tuple
 from time import sleep
@@ -18,8 +20,9 @@ class UGDownloader:
         directory: str,
         geckopath: str = "geckodriver.exe",
         timeout: float = 0.5,
-        order: Literal["rating", "votes"] = "rating"
+        order: Literal["rating", "votes", "rank_sum"] = "rating"
     ):
+        # print(f"The order is {order}")
         self.username = username
         self.password = password
         self.directory = os.path.abspath(directory)
@@ -62,7 +65,7 @@ class UGDownloader:
         ):
             return
         else:
-            raise Exception("Unable to screenshot")
+            raise CannotSreenshotException("Unable to screenshot")
 
     def login(self) -> None:
         # click login button
@@ -87,14 +90,14 @@ class UGDownloader:
 
         sleep(self.timeout)
 
-        filename = str(datetime.now()).replace(
-            ' ', '_'
-        ).replace(
-            ':', '_'
-        ).replace(
-            '.', '_'
-        )
-        # self.screenshot(f"login_{filename}.png")
+        # filename = str(datetime.now()).replace(
+        #     ' ', '_'
+        # ).replace(
+        #     ':', '_'
+        # ).replace(
+        #     '.', '_'
+        # )
+        # self.screenshot("login.png")
 
     def download_tab_by_url(self, url: str) -> None:
         self.login()
@@ -127,56 +130,96 @@ class UGDownloader:
             value=f'//div[@class="{div_classes.TAB_DIV_CLASS}"]'
         )
         best_tab_link = (None, 0, 0)
+        tab_links_to_weigh = []
+
+        # self.screenshot("search_results.png")
+
         # print(len(tab_divs))
 
-        for idx, tab_div in enumerate(tab_divs):
-            # print(tab_div.tag_name)
-            # tab_div.screenshot(f"tab_div_{idx}.png")
-            tab_type_div = tab_div.find_element(
-                by="xpath",
-                value=f'.//div[@class="{div_classes.TAB_TYPE_CLASS}"]'
-            )
-            # print(tab_type_div.text)
-            # tab_type_div.screenshot(f"tab_type_div_{idx}.png")
-            if tab_type_div.text.lower().strip() == "guitar pro":
-                # count coloured stars
-                tab_rating = len(
-                    tab_div.find_elements(
-                        by='xpath',
-                        value=f'.//span[@class="{div_classes.STAR_CLASS}"]'
-                    )
+        if len(tab_divs):
+            for idx, tab_div in enumerate(tab_divs):
+                # print(tab_div.tag_name)
+                # tab_div.screenshot(f"tab_div_{idx}.png")
+                tab_type_div = tab_div.find_element(
+                    by="xpath",
+                    value=f'.//div[@class="{div_classes.TAB_TYPE_CLASS}"]'
                 )
-                # count half-coloured stars
-                tab_rating += len(
-                    tab_div.find_elements(
-                        by='xpath',
-                        value=f'.//span[@class="{div_classes.HALF_STAR_CLASS}"]'
-                    )
-                )
-
-                try:
-                    tab_votes = int(
-                        tab_div.find_element(
+                # print(tab_type_div.text)
+                # tab_type_div.screenshot(f"tab_type_div_{idx}.png")
+                if tab_type_div.text.lower().strip() == "guitar pro":
+                    # count coloured stars
+                    tab_rating = len(
+                        tab_div.find_elements(
                             by='xpath',
-                            value=f'.//div[@class="{div_classes.TAB_VOTES_CLASS}"]'
-                        ).text
+                            value=f'.//span[@class="{div_classes.STAR_CLASS}"]'
+                        )
                     )
-                except NoSuchElementException:
-                    # if there are no votes on selected tab
-                    tab_votes = 0
+                    # count half-coloured stars
+                    tab_rating += len(
+                        tab_div.find_elements(
+                            by='xpath',
+                            value=f'.//span[@class="{div_classes.HALF_STAR_CLASS}"]'
+                        )
+                    )
 
-                tab_link = tab_div.find_element(
-                    by='xpath',
-                    value=f'.//a[@class="{div_classes.TAB_LINK_CLASS}"]'
-                ).get_attribute("href")
+                    try:
+                        tab_votes = int(
+                            tab_div.find_element(
+                                by='xpath',
+                                value=f'.//div[@class="{div_classes.TAB_VOTES_CLASS}"]'
+                            ).text.replace(",", "")
+                        )
+                    except NoSuchElementException:
+                        # if there are no votes on selected tab
+                        tab_votes = 0
 
-                if (
-                    self.order == "rating" and tab_rating > best_tab_link[1]
-                ) or (
-                    self.order == "votes" and tab_votes > best_tab_link[2]
-                ):
-                    best_tab_link = (tab_link, tab_rating, tab_votes)
+                    tab_link = tab_div.find_element(
+                        by='xpath',
+                        value=f'.//a[@class="{div_classes.TAB_LINK_CLASS}"]'
+                    ).get_attribute("href")
+                    # print(tab_link, tab_votes, tab_rating)
 
+                    if (
+                        self.order == "rating" and tab_rating > best_tab_link[1]
+                    ) or (
+                        self.order == "votes" and tab_votes > best_tab_link[2]
+                    ):
+                        best_tab_link = (tab_link, tab_rating, tab_votes)
+                    else:
+                        tab_links_to_weigh.append(
+                            (tab_link, tab_rating, tab_votes)
+                        )
+            if self.order == "rank_sum":
+                rating_sort = sorted(
+                    [i for i in range(len(tab_links_to_weigh))],
+                    key=lambda x: tab_links_to_weigh[x][2],
+                    reverse=True
+                )
+                rating_ranks = [
+                    rating_sort.index(i) for i in range(len(tab_links_to_weigh))
+                ]
+
+                votes_sort = sorted(
+                    [i for i in range(len(tab_links_to_weigh))],
+                    key=lambda x: tab_links_to_weigh[x][2],
+                    reverse=True
+                )
+                votes_ranks = [
+                    votes_sort.index(i) for i in range(len(tab_links_to_weigh))
+                ]
+
+                rank_sums = [a + b for a, b in zip(rating_ranks, votes_ranks)]
+                best_link_id = min(
+                    [i for i in range(len(rank_sums))],
+                    key=rank_sums.__getitem__
+                )
+                best_tab_link = tab_links_to_weigh[best_link_id]
+        else:
+            raise NoTabsFoundException(
+                f"No tabs were found for {artist} - {track}"
+            )
+
+        # print(best_tab_link)
         return best_tab_link
 
     def download_tab_by_name(
@@ -189,3 +232,4 @@ class UGDownloader:
             track
         )
         self.download_tab_by_url(tab_link)
+        return tab_link, tab_rating, tab_votes

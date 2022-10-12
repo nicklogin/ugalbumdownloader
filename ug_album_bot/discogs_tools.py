@@ -12,6 +12,8 @@ class DiscogsTracklistExtractor:
         results = d.search(album, artist=artist, type="release")
         if results:
             release = results[0]
-            return [track.title for track in release.tracklist]
+            output = [track.title for track in release.tracklist]
         else:
-            return []
+            output = []
+        del d
+        return output

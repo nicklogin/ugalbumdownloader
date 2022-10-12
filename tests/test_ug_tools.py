@@ -2,7 +2,7 @@ import unittest
 import os
 
 from ug_album_bot.ug_tools import UGDownloader
-from tests.params import USERNAME, PASSWORD, DOWNLOAD_DIR, TIMEOUT
+from tests.params import USERNAME, PASSWORD, DOWNLOAD_DIR, TIMEOUT, ORDER
 
 
 # class TestUGTracklistExtractor(unittest.TestCase):
@@ -44,7 +44,8 @@ class TestUGDownloader(unittest.TestCase):
             USERNAME,
             PASSWORD,
             self.download_dir,
-            timeout=TIMEOUT
+            timeout=TIMEOUT,
+            order=ORDER
         )
 
     def tearDown(self) -> None:
