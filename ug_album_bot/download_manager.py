@@ -1,7 +1,7 @@
 import os
 import json
 
-from zipfile import ZipFile
+from shutil import make_archive
 from typing import List, Literal
 
 from ug_album_bot.discogs_tools import DiscogsTracklistExtractor
@@ -32,7 +32,7 @@ class AlbumDownloadManager:
         self,
         artist: str,
         tracklist: List[str]
-    ):
+    ) -> None:
         # TODO: optimize with multiprocessing
         for track_id, track in enumerate(tracklist):
             print(track)
@@ -66,7 +66,10 @@ class AlbumDownloadManager:
             downloader.close_driver()
             del downloader
 
-    def save_album_info(self):
+            # find track in folder and rename it to include ID
+            pass
+
+    def save_album_info(self) -> None:
         with open(os.path.join(
             self.album_download_dir,
             "info.json"
@@ -78,17 +81,26 @@ class AlbumDownloadManager:
                 indent=4
             )
 
+    def zip_all(self) -> None:
+        make_archive(
+            f"{self.artist} - {self.album}",
+            "zip",
+            self.album_download_dir
+        )
+        os.remove(self.album_download_dir)
+
     def download_album_tabs(
         self,
         artist: str,
         album: str
-    ):
+    ) -> None:
         self.album_download_dir = os.path.join(
             self.download_dir,
             f"{artist} - {album}"
         )
         self.album_info = []
         self.album = album
+        self.artist = artist
         os.mkdir(self.album_download_dir)
 
         tracklist = DiscogsTracklistExtractor(
@@ -96,6 +108,7 @@ class AlbumDownloadManager:
         ).get_album_tracklist(artist, album)
         self.download_tracklist_tabs(artist, tracklist)
         self.save_album_info()
+        self.zip_all()
 
 
 if __name__ == '__main__':
@@ -108,4 +121,4 @@ if __name__ == '__main__':
         timeout=params.TIMEOUT,
         order=params.ORDER
     )
-    m.download_album_tabs("Metallica", "Master of puppets")
+    m.download_album_tabs("Metallica", "And Justice For All")

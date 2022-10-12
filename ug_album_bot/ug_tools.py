@@ -3,6 +3,7 @@ import os
 import ug_album_bot.div_classes as div_classes
 from ug_album_bot.exceptions import CannotSreenshotException
 from ug_album_bot.exceptions import NoTabsFoundException
+from ug_album_bot.exceptions import CannotLoginException
 
 from typing import Literal, Tuple
 from time import sleep
@@ -90,14 +91,11 @@ class UGDownloader:
 
         sleep(self.timeout)
 
-        # filename = str(datetime.now()).replace(
-        #     ' ', '_'
-        # ).replace(
-        #     ':', '_'
-        # ).replace(
-        #     '.', '_'
-        # )
-        # self.screenshot("login.png")
+        # check that login succeeded
+        if "Incorrect password" in self.driver.page_source:
+            raise CannotLoginException(
+                "Unable to login to ultimate-guitar.com - Please try again later"
+            )
 
     def download_tab_by_url(self, url: str) -> None:
         self.login()

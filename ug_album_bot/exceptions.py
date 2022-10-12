@@ -6,3 +6,7 @@ class CannotSreenshotException(Exception):
 
 class NoTabsFoundException(Exception):
     pass
+
+
+class CannotLoginException(Exception):
+    pass
