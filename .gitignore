@@ -1,4 +1,5 @@
 *.png
+*.zip
 __pycache__
 geckodriver.exe
 geckodriver.log
