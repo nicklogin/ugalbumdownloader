@@ -146,19 +146,28 @@ class UGDownloader:
                 # tab_type_div.screenshot(f"tab_type_div_{idx}.png")
                 if tab_type_div.text.lower().strip() == "guitar pro":
                     # count coloured stars
-                    tab_rating = len(
+                    stars = len(
                         tab_div.find_elements(
-                            by='class_name',
-                            value=div_classes.STAR_CLASS
+                            by='xpath',
+                            value=f'.//span[@class="{div_classes.STAR_CLASS}"]'
                         )
                     )
                     # count half-coloured stars
-                    tab_rating += len(
+                    half_stars = len(
                         tab_div.find_elements(
-                            by='class_name',
-                            value=div_classes.HALF_STAR_CLASS
+                            by='xpath',
+                            value=f'.//span[@class="{div_classes.HALF_STAR_CLASS}"]'
                         )
                     )
+                    # count non-coloured stars
+                    empty_stars = len(
+                        tab_div.find_elements(
+                            by='xpath',
+                            value=f'.//span[@class="{div_classes.EMPTY_STAR_CLASS}"]'
+                        )
+                    )
+
+                    tab_rating = stars + half_stars * 0.5
 
                     try:
                         tab_votes = int(
@@ -176,6 +185,8 @@ class UGDownloader:
                         value=f'.//a[@class="{div_classes.TAB_LINK_CLASS}"]'
                     ).get_attribute("href")
                     # print(tab_link, tab_votes, tab_rating)
+
+                    # print(stars, half_stars, empty_stars, tab_rating, tab_link)
 
                     if (
                         self.order == "rating" and tab_rating > best_tab_link[1]

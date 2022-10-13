@@ -1,7 +1,7 @@
 import os
 import json
+import zipfile
 
-from shutil import make_archive
 from typing import List, Literal
 
 from ug_album_bot.discogs_tools import DiscogsTracklistExtractor
@@ -47,10 +47,10 @@ class AlbumDownloadManager:
             print(track)
             try:
                 tab_link,\
-                tab_rating,\
-                tab_votes = downloader.download_tab_by_name(
-                    artist, track
-                )
+                    tab_rating,\
+                    tab_votes = downloader.download_tab_by_name(
+                        artist, track
+                    )
                 self.album_info.append(
                     {
                         "track_number": track_id,
@@ -84,17 +84,40 @@ class AlbumDownloadManager:
             )
 
     def zip_all(self) -> None:
-        make_archive(
-            f"{self.artist} - {self.album}",
-            "zip",
-            self.album_download_dir
-        )
-        os.remove(self.album_download_dir)
+        fulldname = self.album_download_dir
+        fullzipfname = f"{self.artist} - {self.album}.zip"
+
+        # Taken from https://stackoverflow.com/a/65990560
+        with zipfile.ZipFile(fullzipfname, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(fulldname):
+                for _dir in dirs:
+                    zipf.write(
+                        os.path.join(root, _dir),
+                        os.path.relpath(
+                            os.path.join(root, _dir),
+                            os.path.join(fulldname)
+                        )
+                    )
+                for file in files:
+                    zipf.write(
+                        os.path.join(root, file),
+                        os.path.relpath(
+                            os.path.join(root, file),
+                            os.path.join(fulldname)
+                        )
+                    )
+        for root, dirs, files in os.walk(fulldname, topdown=False):
+            for file in files:
+                os.remove(os.path.join(root, file))
+            for _dir in dirs:
+                os.rmdir(os.path.join(root, _dir))
+        os.rmdir(fulldname)
 
     def download_album_tabs(
         self,
         artist: str,
-        album: str
+        album: str,
+        zip_folder: bool = False
     ) -> None:
         self.album_download_dir = os.path.join(
             self.download_dir,
@@ -110,11 +133,13 @@ class AlbumDownloadManager:
         ).get_album_tracklist(artist, album)
         self.download_tracklist_tabs(artist, tracklist)
         self.save_album_info()
-        self.zip_all()
+        if zip_folder:
+            self.zip_all()
 
 
 if __name__ == '__main__':
     import tests.params as params
+    import typer
     m = AlbumDownloadManager(
         dg_user_token=params.USER_TOKEN,
         ug_username=params.USERNAME,
@@ -123,4 +148,4 @@ if __name__ == '__main__':
         timeout=params.TIMEOUT,
         order=params.ORDER
     )
-    m.download_album_tabs("Linkin Park", "Meteora")
+    typer.run(m.download_album_tabs)
